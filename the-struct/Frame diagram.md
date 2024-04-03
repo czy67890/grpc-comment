@@ -3,6 +3,10 @@
  ```cpp
 typedef struct grpc_server grpc_server;
 ```
+
+
+
+
 这样的typedef在GRPC中使用非常广泛，GRPC中实现了一个CPPIMPL的模板类，该类提供了一个FromC的功能，能够将GRPC中的C声明的语法与CPP语言的强大的面向对象功能一起使用
 ```cpp
 template <typename CppType, typename CType>
@@ -33,11 +37,31 @@ class CppImplOf {
 
 定义在core中的Server继承了两个类，继承代码给出如下
 ```cpp
-class Server : public InternallyRefCounted<Server>,
-               public CppImplOf<Server, grpc_server>
+class Server : public ServerInterface,
+               public InternallyRefCounted<Server>,
+               public CppImplOf<Server, grpc_server> 
 ```
-其中的InternallyRefCounted的定义说明如下,内部有一个RefCount类的成员，Orphanable实际上是一个包装，是一个接口，暴露一个Orphan接口供子类复写
+其中的InternallyRefCounted的定义说明如下,内部有一个RefCount类的成员，Orphanable实际上是一个接口，暴露一个Orphan接口供子类复写，而InternallyRefCounted则是一个类似智能指针的类，不过是通过继承来实现功能，并且通过Ref与Unref操作来手动的维护计数。 
 ```cpp
 template <typename Child, typename UnrefBehavior = UnrefDelete>
 class InternallyRefCounted : public Orphanable
 ```
+暴露给库的使用者的Server有如下的定义
+```cpp
+class Server : public ServerInterface, private internal::GrpcLibrary
+```
+这样的设计使得接口与实现实际上是分离的，而groc core中的ServerInterface与grpc的ServerInterface并不是一个类
+grpc中定义的ServerInterface继承关系如下：
+```cpp
+class ServerInterface : public internal::CallHook
+```
+grpc core中的Server Interface
+
+
+
+
+
+
+
+
+
